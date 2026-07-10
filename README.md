@@ -1,190 +1,170 @@
 # Multi-Clinic Doctor Appointment System
 
-A full-stack web application for managing doctor appointments across multiple clinics with role-based authentication and comprehensive booking management.
+A Flask web application for booking doctor appointments across multiple clinics,
+with role-based access control for patients, doctors, and administrators.
+
+Built with Flask, SQLAlchemy, and Bootstrap. Covered by a 38-test pytest suite.
+
+---
 
 ## Features
 
-- **Role-based Authentication**: Patient, Doctor, and Admin roles
-- **Complete Booking Flow**: Clinic selection → Doctor selection → Time slot booking
-- **Admin Panel**: Full CRUD operations for clinics, doctors, appointments, and time slots
-- **Doctor Dashboard**: Schedule management and appointment tracking
-- **Patient Portal**: Registration, booking, and appointment history
-- **Professional UI**: Medical-themed design with Bootstrap
+**Patients** register, browse clinics and doctors, book an available time slot in a
+three-step flow, and view or cancel their appointments.
 
-## Local Development Setup
+**Doctors** get a dashboard of their appointment load, see the patients booked with
+them (and only them), and manage their own availability by adding or removing time slots.
 
-### Prerequisites
+**Administrators** get a system-wide dashboard and full CRUD over clinics, doctors,
+and appointment statuses. Creating a doctor provisions their login account in the
+same operation.
 
-Before running this application locally, ensure you have the following installed:
+---
 
-1. **Python 3.8+** - [Download from python.org](https://www.python.org/downloads/)
-2. **PostgreSQL** - [Download from postgresql.org](https://www.postgresql.org/download/)
-3. **Git** - [Download from git-scm.com](https://git-scm.com/downloads/)
-4. **VS Code** (recommended) - [Download from code.visualstudio.com](https://code.visualstudio.com/)
-
-### Step 1: Clone and Setup Project
+## Quick Start
 
 ```bash
-# Clone the repository (or download the files)
-# Navigate to project directory
-cd multi-clinic-appointment-system
-
-# Create virtual environment
+# 1. Create and activate a virtual environment
 python -m venv venv
+ venv/Scripts/activate       # Windows
+source venv/bin/activate     # macOS / Linux
 
-# Activate virtual environment
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
+# 2. Install dependencies
+pip install -r local_requirements.txt
+
+# 3. Run — creates the SQLite schema and seeds demo data on first launch
+python local_main.py
 ```
 
-### Step 2: Install Dependencies
+Open **http://127.0.0.1:5000**.
+
+No database server is required: the app defaults to SQLite and creates
+`instance/clinic_appointments.db` automatically.
+
+### Demo accounts
+
+| Role    | Email                | Password     |
+|---------|----------------------|--------------|
+| Admin   | `admin@clinic.com`   | `admin123`   |
+| Doctor  | `doctor@clinic.com`  | `doctor123`  |
+| Patient | `priya@example.com`  | `patient123` |
+
+Patients can also self-register at `/register`.
+
+To reset the database, delete `instance/clinic_appointments.db` and re-run
+`python local_main.py`, or re-seed in place with `python seed.py` (idempotent).
+
+---
+
+## Running the Tests
 
 ```bash
-# Install Python packages
-pip install -r requirements.txt
+pip install pytest
+pytest
 ```
 
-### Step 3: Database Setup (Two Options)
+38 tests run against an isolated in-memory SQLite database, so they never touch
+your development data. Coverage includes:
 
-**Option A: SQLite (Recommended for Local Development)**
-- No installation needed! SQLite comes with Python
-- Database file (`clinic_appointments.db`) created automatically
-- Perfect for development and testing
+- **Authentication** — registration, duplicate email/username rejection,
+  password hashing, role-based login redirects, logout.
+- **Access control** — anonymous users are redirected to login; patients cannot
+  reach the admin or doctor areas; doctors cannot reach the admin area.
+- **Booking** — the full clinic → doctor → slot flow, slot consumption,
+  double-booking rejection, and exclusion of past/unavailable slots.
+- **Data isolation** — patients see only their own appointments; doctors see only
+  appointments booked with them.
+- **Admin CRUD** — clinic and doctor creation/deletion, status transitions.
 
-**Option B: PostgreSQL (Advanced)**
-```sql
--- If you prefer PostgreSQL, create a database:
-CREATE DATABASE clinic_appointments;
-CREATE USER clinic_user WITH PASSWORD 'your_password';
-GRANT ALL PRIVILEGES ON DATABASE clinic_appointments TO clinic_user;
-```
+---
 
-**Environment Configuration** (Optional):
-Create a `.env` file only if you want to customize settings:
-```env
-# Optional: Only needed for custom configuration
-SESSION_SECRET=your-secret-key-here-make-it-long-and-random
-DATABASE_URL=postgresql://user:pass@localhost:5432/clinic_appointments  # Only for PostgreSQL
-```
-
-### Step 4: VS Code Configuration
-
-1. **Install VS Code Extensions**:
-   - Python
-   - Python Debugger
-   - SQLite Viewer (optional)
-   - GitLens (optional)
-
-2. **Configure VS Code Settings**:
-   - Open Command Palette (Ctrl+Shift+P)
-   - Select "Python: Select Interpreter"
-   - Choose the interpreter from your virtual environment
-
-### Step 5: Initialize Database
-
-```bash
-# Run the application once to create tables
-python main.py
-```
-
-The application will automatically create all necessary tables and a default admin user.
-
-### Step 6: Run the Application
-
-```bash
-# Start the Flask development server
-python main.py
-```
-
-The application will be available at: `http://localhost:5000`
-
-## Default Login Credentials
-
-- **Admin**: admin@clinic.com / admin123
-- **Patients**: Register through the signup page
-- **Doctors**: Created by admins through the admin panel
-
-## Project Structure
+## Architecture
 
 ```
-multi-clinic-appointment-system/
-├── app.py              # Flask application setup
-├── main.py             # Application entry point
-├── models.py           # Database models
-├── requirements.txt    # Python dependencies
-├── .env               # Environment variables (create this)
-├── routes/            # Route blueprints
-│   ├── auth.py        # Authentication routes
-│   ├── booking.py     # Booking system routes
-│   ├── admin.py       # Admin panel routes
-│   └── doctor.py      # Doctor dashboard routes
-├── templates/         # HTML templates
-│   ├── base.html      # Base template
-│   ├── auth/          # Authentication templates
-│   ├── booking/       # Booking templates
-│   ├── admin/         # Admin templates
-│   └── doctor/        # Doctor templates
-└── static/           # Static files
-    ├── css/          # Stylesheets
-    ├── js/           # JavaScript files
-    └── images/       # Image assets
+local_main.py          Entry point: creates schema, seeds data, runs the dev server
+local_app.py           Application factory (create_app) + configuration
+local_db.py            SQLAlchemy instance, shared to avoid circular imports
+local_models.py        ORM models: User, Patient, Clinic, Doctor, TimeSlot, Appointment
+seed.py                Idempotent demo-data seeding
+local_routes/
+    utils.py           current_user helper, @login_required / @role_required decorators
+    auth.py            Registration, login, logout
+    booking.py         Three-step booking flow and cancellation
+    admin.py           Admin dashboard and CRUD
+    doctor.py          Doctor dashboard and schedule management
+templates/             Jinja2 templates (base layout + per-blueprint folders)
+tests/                 pytest suite with fixtures for each role
 ```
 
-## Development Tips
+### Data model
 
-1. **Database Reset**: If you need to reset the database, delete all tables and restart the application
-2. **Environment Variables**: Never commit the `.env` file to version control
-3. **Virtual Environment**: Always activate your virtual environment before working on the project
-4. **Hot Reloading**: The Flask development server automatically reloads when you make changes
+A `User` carries the `role` discriminator (`patient` / `doctor` / `admin`) and the
+password hash. `Doctor` and `Patient` are profile tables hanging off `User`, so a
+doctor is a user with a doctor profile rather than a separate identity.
 
-## Troubleshooting
+A `TimeSlot` belongs to a doctor and carries an `is_available` flag. An
+`Appointment` joins a patient, a doctor, and exactly one time slot.
 
-### Common Issues:
+---
 
-1. **Port Already in Use**: Change the port in `main.py` if 5000 is occupied
-2. **Database Connection**: Verify PostgreSQL is running and credentials are correct
-3. **Module Not Found**: Ensure virtual environment is activated and dependencies are installed
-4. **Permission Errors**: Check database user permissions
+## Engineering Notes
 
-### VS Code Debugging:
+**Application factory.** `create_app(test_config=None)` lets the test suite build an
+app bound to an in-memory database rather than the developer's SQLite file. Without
+this, tests would mutate real data and could not run in isolation.
 
-Create `.vscode/launch.json`:
-```json
-{
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Flask App",
-            "type": "python",
-            "request": "launch",
-            "program": "main.py",
-            "console": "integratedTerminal",
-            "env": {
-                "FLASK_ENV": "development",
-                "FLASK_DEBUG": "1"
-            }
-        }
-    ]
-}
-```
+**Circular imports.** The SQLAlchemy `db` object lives alone in `local_db.py`. If it
+were defined in `local_app.py`, the models would import the app and the app would
+import the models. Isolating `db` breaks the cycle.
 
-## Production Deployment
+**Slot availability is authoritative.** `is_available` on `TimeSlot` is the single
+source of truth for whether a slot can be booked. Booking sets it to `False`;
+cancelling sets it back to `True`. `/book/confirm` re-checks the flag before writing,
+so a slot taken between page load and submission is rejected rather than
+double-booked.
 
-For production deployment, consider:
-- Using a production WSGI server (Gunicorn, uWSGI)
-- Setting up a reverse proxy (Nginx)
-- Using environment-specific configuration
-- Setting up proper logging
-- Implementing backup strategies
+**Cancellation is state-guarded.** Only a `scheduled` appointment can be cancelled.
+An earlier version enforced this only by hiding the button in the template — the
+route itself would happily cancel a *completed* appointment and wrongly return its
+slot to the pool. Authorization and state checks belong in the route, not the view.
+`test_cannot_cancel_a_completed_appointment` pins this.
 
-## Support
+**Ownership checks.** Cancelling verifies the appointment belongs to the session
+user, so a patient cannot cancel someone else's appointment by guessing an ID.
 
-If you encounter any issues during setup, check:
-1. Python version compatibility
-2. PostgreSQL service status
-3. Virtual environment activation
-4. Environment variable configuration
+**Timezone-aware timestamps.** `created_at` defaults use
+`datetime.now(timezone.utc)`; `datetime.utcnow()` is deprecated in Python 3.12+.
 
-Happy coding! 🏥
+---
+
+## Known Limitations
+
+Honest notes on what this does *not* do yet:
+
+- **No CSRF protection.** State-changing forms should use Flask-WTF tokens before
+  this is exposed to real users.
+- **Slot booking is not transactionally locked.** The `is_available` re-check
+  narrows the double-booking window but does not close it. Two simultaneous requests
+  could both pass the check. A `SELECT ... FOR UPDATE` (or a unique constraint on
+  `time_slot_id` for active appointments) would make it airtight.
+- **No password strength requirements** and no rate limiting on login.
+- **The dev server is not production-ready.** Deploy behind Gunicorn + a reverse
+  proxy, set `SESSION_SECRET`, and switch `DATABASE_URL` to PostgreSQL.
+
+---
+
+## Configuration
+
+All optional — the app runs with zero configuration.
+
+| Variable         | Default                          | Purpose                          |
+|------------------|----------------------------------|----------------------------------|
+| `SESSION_SECRET` | a development placeholder        | Flask session signing key        |
+| `DATABASE_URL`   | `sqlite:///clinic_appointments.db` | Database connection string     |
+| `PORT`           | `5000`                           | Port for the development server  |
+
+Set them in a `.env` file (see `.env.example`); it is loaded via `python-dotenv`.
+
+> **Note:** `DATABASE_URL` values beginning with `postgresql://` are intentionally
+> ignored in favour of SQLite, a carry-over from the project's original hosted
+> environment. Remove that branch in `local_app._database_url()` to use PostgreSQL.

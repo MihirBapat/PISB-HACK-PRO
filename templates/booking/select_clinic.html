@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Select Clinic{% endblock %}
+{% block content %}
+<h3 class="mb-1">Step 1 &mdash; Choose a Clinic</h3>
+<p class="text-muted">Select the clinic you'd like to visit.</p>
+
+{% if clinics %}
+<div class="row g-4">
+    {% for clinic in clinics %}
+    <div class="col-md-6">
+        <div class="card h-100 p-4 stat-card">
+            <h5><i class="bi bi-building text-primary"></i> {{ clinic.name }}</h5>
+            <p class="text-muted mb-1"><i class="bi bi-geo-alt"></i> {{ clinic.address }}</p>
+            {% if clinic.phone %}<p class="text-muted mb-1"><i class="bi bi-telephone"></i> {{ clinic.phone }}</p>{% endif %}
+            <p class="text-muted"><small>{{ clinic.doctors|length }} doctor(s) available</small></p>
+            <a href="{{ url_for('booking.select_doctor', clinic_id=clinic.id) }}" class="btn btn-primary mt-auto">Select Clinic</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">No clinics are available yet.</div>
+{% endif %}
+{% endblock %}

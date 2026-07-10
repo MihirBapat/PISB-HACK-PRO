@@ -1,7 +1,11 @@
 Flask==3.0.0
 Flask-SQLAlchemy==3.1.1
 Werkzeug==3.0.1
-SQLAlchemy==2.0.23
+# SQLAlchemy 2.0.23 crashes on Python 3.13 (TypingOnly assertion in sqlalchemy.sql.elements).
+# 2.0.36+ is required for Python 3.13 support.
+SQLAlchemy>=2.0.36
+# Imported by local_main.py
+Flask-Migrate==4.1.0
 email-validator==2.1.0
 python-dotenv==1.0.0
 

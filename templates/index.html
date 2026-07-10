@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="hero p-5 mb-4 text-center">
+    <h1 class="display-5 fw-bold"><i class="bi bi-heart-pulse"></i> ClinicCare</h1>
+    <p class="lead mb-4">Book appointments with trusted doctors across multiple clinics — quickly and easily.</p>
+    {% if not current_user %}
+        <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg me-2">Get Started</a>
+        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light btn-lg">Login</a>
+    {% elif current_user.role == 'patient' %}
+        <a href="{{ url_for('booking.select_clinic') }}" class="btn btn-light btn-lg">Book an Appointment</a>
+    {% endif %}
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card h-100 p-4 text-center stat-card">
+            <div class="fs-1 text-primary"><i class="bi bi-building"></i></div>
+            <h5 class="mt-2">Multiple Clinics</h5>
+            <p class="text-muted mb-0">Choose from a network of clinics near you.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 p-4 text-center stat-card">
+            <div class="fs-1 text-primary"><i class="bi bi-person-badge"></i></div>
+            <h5 class="mt-2">Expert Doctors</h5>
+            <p class="text-muted mb-0">Browse doctors by specialization and experience.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 p-4 text-center stat-card">
+            <div class="fs-1 text-primary"><i class="bi bi-calendar-check"></i></div>
+            <h5 class="mt-2">Easy Booking</h5>
+            <p class="text-muted mb-0">Pick a time slot that works for you in seconds.</p>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4 p-4">
+    <h6 class="text-muted">Demo credentials</h6>
+    <ul class="mb-0">
+        <li><strong>Admin:</strong> admin@clinic.com / admin123</li>
+        <li><strong>Doctor:</strong> doctor@clinic.com / doctor123</li>
+        <li><strong>Patient:</strong> register a new account</li>
+    </ul>
+</div>
+{% endblock %}

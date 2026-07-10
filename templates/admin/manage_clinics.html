@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Manage Clinics{% endblock %}
+{% block content %}
+<h3 class="mb-3">Manage Clinics</h3>
+
+<div class="row g-4">
+    <div class="col-md-5">
+        <div class="card p-4">
+            <h5 class="mb-3">Add Clinic</h5>
+            <form method="POST" action="{{ url_for('admin.add_clinic') }}">
+                <div class="mb-2"><label class="form-label">Name *</label><input name="name" class="form-control" required></div>
+                <div class="mb-2"><label class="form-label">Address *</label><textarea name="address" class="form-control" rows="2" required></textarea></div>
+                <div class="mb-2"><label class="form-label">Phone</label><input name="phone" class="form-control"></div>
+                <div class="mb-3"><label class="form-label">Email</label><input type="email" name="email" class="form-control"></div>
+                <button class="btn btn-primary w-100">Add Clinic</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div class="card p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light"><tr><th>Name</th><th>Address</th><th>Phone</th><th>Doctors</th><th></th></tr></thead>
+                    <tbody>
+                    {% for clinic in clinics %}
+                        <tr>
+                            <td><strong>{{ clinic.name }}</strong></td>
+                            <td><small>{{ clinic.address }}</small></td>
+                            <td><small>{{ clinic.phone or '—' }}</small></td>
+                            <td>{{ clinic.doctors|length }}</td>
+                            <td class="text-end">
+                                <form method="POST" action="{{ url_for('admin.delete_clinic', clinic_id=clinic.id) }}"
+                                      onsubmit="return confirm('Delete this clinic?');">
+                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="text-muted text-center py-3">No clinics yet.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Select Doctor{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('booking.select_clinic') }}">Clinics</a></li>
+        <li class="breadcrumb-item active">{{ clinic.name }}</li>
+    </ol>
+</nav>
+
+<h3 class="mb-1">Step 2 &mdash; Choose a Doctor</h3>
+<p class="text-muted">Doctors at <strong>{{ clinic.name }}</strong>.</p>
+
+{% if doctors %}
+<div class="row g-4">
+    {% for doctor in doctors %}
+    <div class="col-md-6">
+        <div class="card h-100 p-4 stat-card">
+            <h5><i class="bi bi-person-badge text-primary"></i> {{ doctor.name }}</h5>
+            <p class="mb-1"><span class="badge bg-info text-dark">{{ doctor.specialization or 'General' }}</span></p>
+            <p class="text-muted mb-1"><small>{{ doctor.years_experience or 0 }} years experience</small></p>
+            <p class="text-muted"><small>License: {{ doctor.license_number or 'N/A' }}</small></p>
+            <a href="{{ url_for('booking.select_time', doctor_id=doctor.id) }}" class="btn btn-primary mt-auto">View Available Times</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">No doctors are registered at this clinic yet.</div>
+{% endif %}
+{% endblock %}

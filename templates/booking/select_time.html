@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Select Time{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('booking.select_clinic') }}">Clinics</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('booking.select_doctor', clinic_id=doctor.clinic_id) }}">{{ doctor.clinic.name }}</a></li>
+        <li class="breadcrumb-item active">{{ doctor.name }}</li>
+    </ol>
+</nav>
+
+<h3 class="mb-1">Step 3 &mdash; Choose a Time Slot</h3>
+<p class="text-muted">Available times for <strong>{{ doctor.name }}</strong> ({{ doctor.specialization or 'General' }}).</p>
+
+{% if slots %}
+<form method="POST" action="{{ url_for('booking.confirm') }}">
+    <div class="card p-4">
+        {% set grouped = {} %}
+        {% for slot in slots %}
+            {% if grouped.update({slot.date: grouped.get(slot.date, []) + [slot]}) %}{% endif %}
+        {% endfor %}
+
+        {% for slot_date, day_slots in grouped.items() %}
+        <h6 class="mt-3"><i class="bi bi-calendar3"></i> {{ slot_date.strftime('%A, %d %B %Y') }}</h6>
+        <div class="row g-2 mb-2">
+            {% for slot in day_slots %}
+            <div class="col-auto">
+                <input type="radio" class="btn-check" name="slot_id" id="slot{{ slot.id }}" value="{{ slot.id }}" required>
+                <label class="btn btn-outline-primary" for="slot{{ slot.id }}">{{ slot.formatted_time }}</label>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+
+        <div class="mt-3">
+            <label class="form-label">Notes for the doctor (optional)</label>
+            <textarea name="notes" class="form-control" rows="3" placeholder="Describe your symptoms or reason for visit"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-success mt-3"><i class="bi bi-check-circle"></i> Confirm Booking</button>
+    </div>
+</form>
+{% else %}
+<div class="alert alert-warning">This doctor has no available time slots right now.</div>
+{% endif %}
+{% endblock %}

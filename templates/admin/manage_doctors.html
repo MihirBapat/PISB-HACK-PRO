@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Manage Doctors{% endblock %}
+{% block content %}
+<h3 class="mb-3">Manage Doctors</h3>
+
+<div class="row g-4">
+    <div class="col-md-5">
+        <div class="card p-4">
+            <h5 class="mb-3">Add Doctor</h5>
+            <form method="POST" action="{{ url_for('admin.add_doctor') }}">
+                <div class="mb-2"><label class="form-label">Full Name *</label><input name="name" class="form-control" required></div>
+                <div class="mb-2"><label class="form-label">Email *</label><input type="email" name="email" class="form-control" required></div>
+                <div class="mb-2"><label class="form-label">Username *</label><input name="username" class="form-control" required></div>
+                <div class="mb-2"><label class="form-label">Password *</label><input type="password" name="password" class="form-control" required></div>
+                <div class="mb-2"><label class="form-label">Phone</label><input name="phone" class="form-control"></div>
+                <div class="mb-2">
+                    <label class="form-label">Clinic *</label>
+                    <select name="clinic_id" class="form-select" required>
+                        <option value="">Choose…</option>
+                        {% for clinic in clinics %}<option value="{{ clinic.id }}">{{ clinic.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="mb-2"><label class="form-label">Specialization</label><input name="specialization" class="form-control"></div>
+                <div class="mb-2"><label class="form-label">License Number</label><input name="license_number" class="form-control"></div>
+                <div class="mb-3"><label class="form-label">Years of Experience</label><input type="number" name="years_experience" class="form-control" min="0"></div>
+                <button class="btn btn-primary w-100">Add Doctor</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div class="card p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light"><tr><th>Name</th><th>Specialization</th><th>Clinic</th><th>Exp.</th><th></th></tr></thead>
+                    <tbody>
+                    {% for doctor in doctors %}
+                        <tr>
+                            <td><strong>{{ doctor.name }}</strong><br><small class="text-muted">{{ doctor.email }}</small></td>
+                            <td>{{ doctor.specialization or '—' }}</td>
+                            <td>{{ doctor.clinic.name if doctor.clinic else '—' }}</td>
+                            <td>{{ doctor.years_experience or 0 }} yrs</td>
+                            <td class="text-end">
+                                <form method="POST" action="{{ url_for('admin.delete_doctor', doctor_id=doctor.id) }}"
+                                      onsubmit="return confirm('Delete this doctor and their user account?');">
+                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="text-muted text-center py-3">No doctors yet.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

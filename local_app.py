@@ -1,41 +1,35 @@
+"""Application factory and configuration for the Multi-Clinic Appointment System."""
+
 import os
+import sys
 import logging
-from local_models import db, User, Patient, Clinic, Doctor, TimeSlot
+
+# Windows consoles default to cp1252, which cannot encode the emoji used in the
+# startup banner. Force UTF-8 so those prints don't raise UnicodeEncodeError.
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 from flask import Flask, render_template
 from werkzeug.middleware.proxy_fix import ProxyFix
-import logging
+
 from local_db import db
 
-# Create Flask app
-app = Flask(__name__)
+# Imported for its side effect: registering the ORM mappers with `db` so that
+# db.create_all() knows about every table.
+import local_models  # noqa: F401
 
-# Enable proxy support (useful if deployed behind reverse proxy)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-# Development logging setup
-logging.basicConfig(level=logging.DEBUG)
+def _database_url():
+    """Resolve the database URL, defaulting to local SQLite."""
+    url = os.environ.get('DATABASE_URL')
+    # The Replit deployment set a postgresql:// URL that is not reachable
+    # locally, so fall back to SQLite unless a non-postgres URL is supplied.
+    if not url or url.startswith('postgresql://'):
+        return 'sqlite:///clinic_appointments.db'
+    return url
 
-# Secret key for sessions
-app.secret_key = os.environ.get("SESSION_SECRET", "your-local-secret-key-for-development-only")
 
-# Determine database URL (use SQLite for local development if not set)
-database_url = os.environ.get("DATABASE_URL")
-if not database_url or database_url.startswith("postgresql://"):
-    database_url = "sqlite:///clinic_appointments.db"
-
-# Configure SQLAlchemy
-app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-# Initialize SQLAlchemy with app
-db.init_app(app)
-
-# Register blueprints
-def register_blueprints():
+def register_blueprints(app):
     from local_routes.auth import auth_bp
     from local_routes.booking import booking_bp
     from local_routes.admin import admin_bp
@@ -46,102 +40,60 @@ def register_blueprints():
     app.register_blueprint(admin_bp)
     app.register_blueprint(doctor_bp)
 
-register_blueprints()
 
-# Create default data inside app context
-with app.app_context():
-    import local_models
-    db.create_all()
+def create_app(test_config=None):
+    """Build and configure a Flask app.
 
-    from local_models import User, Clinic, Doctor, TimeSlot
-    from werkzeug.security import generate_password_hash
-    from datetime import datetime, timedelta
+    Passing ``test_config`` lets the test-suite swap in an isolated
+    in-memory database without touching the developer's SQLite file.
+    """
+    app = Flask(__name__)
 
-    # Admin setup
-    if not User.query.filter_by(email='admin@clinic.com').first():
-        admin_user = User(
-            email='admin@clinic.com',
-            name='System Administrator',
-            username='admin',
-            phone='555-0123',
-            role='admin',
-            password_hash=generate_password_hash('admin123')
-        )
-        db.session.add(admin_user)
-        db.session.commit()
-        print("✅ Default admin created: admin@clinic.com / admin123")
+    # Trust proxy headers when deployed behind nginx / a platform router.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-    # Clinic setup
-    clinic = Clinic.query.filter_by(name='General Medical Center').first()
-    if not clinic:
-        clinic = Clinic(
-            name='General Medical Center',
-            address='123 Health Street, Medical City',
-            phone='555-0100',
-            email='info@generalmedical.com'
-        )
-        db.session.add(clinic)
-        db.session.commit()
-        print("🏥 Sample clinic created.")
+    app.config['SECRET_KEY'] = os.environ.get(
+        'SESSION_SECRET', 'your-local-secret-key-for-development-only'
+    )
+    app.config['SQLALCHEMY_DATABASE_URI'] = _database_url()
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Doctor setup
-    doctor_user = User.query.filter_by(email='doctor@clinic.com').first()
-    if not doctor_user:
-        doctor_user = User(
-            email='doctor@clinic.com',
-            name='Dr. Sarah Johnson',
-            username='drsarah',
-            phone='555-0124',
-            role='doctor',
-            password_hash=generate_password_hash('doctor123')
-        )
-        db.session.add(doctor_user)
-        db.session.commit()
+    # pool_recycle/pre_ping matter for server-side databases (Postgres) but are
+    # meaningless for SQLite, which has no long-lived network connections.
+    if not app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite'):
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            'pool_recycle': 300,
+            'pool_pre_ping': True,
+        }
 
-    # Re-fetch user to ensure ID is available
-    doctor_user = User.query.filter_by(email='doctor@clinic.com').first()
+    if test_config:
+        app.config.update(test_config)
+    else:
+        logging.basicConfig(level=logging.INFO)
 
-    # Now check and add doctor profile
-    doctor_profile = Doctor.query.filter_by(user_id=doctor_user.id).first()
-    if not doctor_profile:
-        doctor_profile = Doctor(
-            user_id=doctor_user.id,
-            clinic_id=clinic.id,
-            specialization='General Medicine',
-            license_number='MD123456',
-            years_experience=8
-        )
-        db.session.add(doctor_profile)
-        db.session.commit()
-        print("👩‍⚕️ Sample doctor created: doctor@clinic.com / doctor123")
+    db.init_app(app)
+    register_blueprints(app)
 
-        # Add time slots for next 7 days
-        for day_offset in range(7):
-            date = datetime.now().date() + timedelta(days=day_offset)
-            for hour in range(9, 12):  # Morning
-                db.session.add(TimeSlot(
-                    doctor_id=doctor_profile.id,
-                    date=date,
-                    start_time=f"{hour:02d}:00",
-                    end_time=f"{hour+1:02d}:00",
-                    is_available=True
-                ))
-            for hour in range(14, 17):  # Afternoon
-                db.session.add(TimeSlot(
-                    doctor_id=doctor_profile.id,
-                    date=date,
-                    start_time=f"{hour:02d}:00",
-                    end_time=f"{hour+1:02d}:00",
-                    is_available=True
-                ))
-        db.session.commit()
-        print("🕒 Sample time slots created for Dr. Sarah Johnson")
+    @app.context_processor
+    def inject_user():
+        from local_routes.utils import current_user
+        return {'current_user': current_user()}
 
-# Default route
-@app.route('/')
-def index():
-    return render_template('index.html')
+    @app.route('/')
+    def index():
+        return render_template('index.html')
 
-# Run locally
-if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    @app.errorhandler(404)
+    def not_found(error):
+        return render_template('errors/404.html'), 404
+
+    @app.errorhandler(500)
+    def server_error(error):
+        db.session.rollback()
+        return render_template('errors/500.html'), 500
+
+    return app
+
+
+# Module-level app so `from local_app import app` keeps working.
+app = create_app()

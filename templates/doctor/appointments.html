@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}My Appointments{% endblock %}
+{% block content %}
+<h3 class="mb-3">Appointments</h3>
+
+<div class="card p-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr><th>Patient</th><th>Date</th><th>Time</th><th>Status</th><th>Notes</th></tr>
+            </thead>
+            <tbody>
+            {% for appt in appointments %}
+                <tr>
+                    <td><strong>{{ appt.patient_name }}</strong></td>
+                    <td>{{ appt.appointment_date.strftime('%d %b %Y') if appt.appointment_date else '—' }}</td>
+                    <td>{{ appt.appointment_time }}</td>
+                    <td>
+                        {% if appt.status == 'scheduled' %}<span class="badge bg-primary">Scheduled</span>
+                        {% elif appt.status == 'completed' %}<span class="badge bg-success">Completed</span>
+                        {% elif appt.status == 'cancelled' %}<span class="badge bg-secondary">Cancelled</span>
+                        {% else %}<span class="badge bg-light text-dark">{{ appt.status }}</span>{% endif %}
+                    </td>
+                    <td><small class="text-muted">{{ appt.notes or '—' }}</small></td>
+                </tr>
+            {% else %}
+                <tr><td colspan="5" class="text-muted text-center py-3">No appointments yet.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

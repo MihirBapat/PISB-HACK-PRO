@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Doctor Dashboard{% endblock %}
+{% block content %}
+<h3 class="mb-1">Welcome, {{ doctor.name }}</h3>
+<p class="text-muted">{{ doctor.specialization or 'General Medicine' }} &middot; {{ doctor.clinic.name if doctor.clinic else 'No clinic' }}</p>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card p-4 text-center stat-card">
+            <div class="fs-1 text-primary"><i class="bi bi-calendar-check"></i></div>
+            <div class="fs-3 fw-bold">{{ stats.total_appointments }}</div>
+            <div class="text-muted">Total Appointments</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 text-center stat-card">
+            <div class="fs-1 text-success"><i class="bi bi-clock-history"></i></div>
+            <div class="fs-3 fw-bold">{{ stats.upcoming }}</div>
+            <div class="text-muted">Upcoming</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 text-center stat-card">
+            <div class="fs-1 text-info"><i class="bi bi-grid-3x3-gap"></i></div>
+            <div class="fs-3 fw-bold">{{ stats.slots }}</div>
+            <div class="text-muted">Time Slots</div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex gap-2">
+    <a href="{{ url_for('doctor.appointments') }}" class="btn btn-primary"><i class="bi bi-list-ul"></i> View Appointments</a>
+    <a href="{{ url_for('doctor.schedule') }}" class="btn btn-outline-primary"><i class="bi bi-calendar-plus"></i> Manage Schedule</a>
+</div>
+{% endblock %}

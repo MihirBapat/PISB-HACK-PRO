@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}My Schedule{% endblock %}
+{% block content %}
+<h3 class="mb-3">Manage Schedule</h3>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card p-4">
+            <h5 class="mb-3">Add Time Slot</h5>
+            <form method="POST" action="{{ url_for('doctor.add_slot') }}">
+                <div class="mb-2"><label class="form-label">Date</label><input type="date" name="date" class="form-control" required></div>
+                <div class="mb-2"><label class="form-label">Start Time</label><input type="time" name="start_time" class="form-control" required></div>
+                <div class="mb-3"><label class="form-label">End Time</label><input type="time" name="end_time" class="form-control" required></div>
+                <button class="btn btn-primary w-100">Add Slot</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light"><tr><th>Date</th><th>Time</th><th>Status</th><th></th></tr></thead>
+                    <tbody>
+                    {% for slot in slots %}
+                        <tr>
+                            <td>{{ slot.date.strftime('%a, %d %b %Y') }}</td>
+                            <td>{{ slot.formatted_time }}</td>
+                            <td>
+                                {% if slot.is_available %}<span class="badge bg-success">Available</span>
+                                {% else %}<span class="badge bg-secondary">Booked</span>{% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if slot.is_available %}
+                                <form method="POST" action="{{ url_for('doctor.delete_slot', slot_id=slot.id) }}"
+                                      onsubmit="return confirm('Remove this time slot?');">
+                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4" class="text-muted text-center py-3">No time slots yet.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

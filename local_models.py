@@ -1,5 +1,5 @@
 from local_db import db
-from datetime import datetime
+from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(db.Model):
@@ -11,7 +11,7 @@ class User(db.Model):
     phone = db.Column(db.String(20))
     role = db.Column(db.String(20), nullable=False, default='patient')
     password_hash = db.Column(db.String(256), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     appointments = db.relationship('Appointment', foreign_keys='Appointment.patient_id', backref='patient')
@@ -38,7 +38,7 @@ class Patient(db.Model):
     gender = db.Column(db.String(10))
     blood_group = db.Column(db.String(5))
     address = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def __repr__(self):
         return f'<Patient {self.user.name} - {self.blood_group}>'
@@ -49,7 +49,7 @@ class Clinic(db.Model):
     address = db.Column(db.Text, nullable=False)
     phone = db.Column(db.String(20))
     email = db.Column(db.String(120))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     doctors = db.relationship('Doctor', backref='clinic', lazy=True)
 
@@ -63,7 +63,7 @@ class Doctor(db.Model):
     specialization = db.Column(db.String(100))
     license_number = db.Column(db.String(50))
     years_experience = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     time_slots = db.relationship('TimeSlot', backref='doctor', lazy=True)
     appointments = db.relationship('Appointment', foreign_keys='Appointment.doctor_id', backref='doctor')
@@ -86,7 +86,7 @@ class TimeSlot(db.Model):
     start_time = db.Column(db.String(10), nullable=False)
     end_time = db.Column(db.String(10), nullable=False)
     is_available = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     appointments = db.relationship('Appointment', backref='time_slot', lazy=True)
 
@@ -108,7 +108,7 @@ class Appointment(db.Model):
     time_slot_id = db.Column(db.Integer, db.ForeignKey('time_slot.id'), nullable=False)
     status = db.Column(db.String(20), default='scheduled')
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     @property
     def patient_name(self):
